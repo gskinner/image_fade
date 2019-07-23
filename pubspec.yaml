@@ -1,0 +1,23 @@
+name: image_fade
+description: A widget that displays a placeholder and optional progress indicator while an image loads, then cross-fades to the loaded image. Improves on FadeInImage.
+author: Grant Skinner <grant@gskinner.com>
+repository: https://github.com/gskinner/image_fade
+homepage: https://github.com/gskinner/image_fade
+
+version: 0.1.0
+
+environment:
+  sdk: ">=2.1.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+# The following section is specific to Flutter.
+flutter:
+  uses-material-design: true

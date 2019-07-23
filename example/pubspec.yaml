@@ -1,0 +1,27 @@
+name: image_fade_example
+description: Load and cross fade images
+author: Grant Skinner
+repository: TODO!
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.1.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  image_fade:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+# The following section is specific to Flutter.
+flutter:
+  uses-material-design: true
+
+  assets:
+    - ./assets/images/
