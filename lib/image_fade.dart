@@ -93,29 +93,29 @@ class ImageFade extends StatefulWidget {
 
 class _ImageResolver {
   ImageStream _stream;
-  Function(ImageInfo) callback;
-  Function(ImageChunkEvent) progressCallback;
+  Function(ImageInfo) onComplete;
+  Function(ImageChunkEvent) onProgress;
   ImageStreamListener _listener;
 
   ImageChunkEvent chunkEvent;
 
-  _ImageResolver(ImageProvider provider, _ImageFadeState state, this.callback, [this.progressCallback]) {
+  _ImageResolver(ImageProvider provider, _ImageFadeState state, this.onComplete, [this.onProgress]) {
     double w = state.widget.width, h = state.widget.height;
     ImageConfiguration config = createLocalImageConfiguration(
       state.context,
       size: w != null && h != null ? Size(w, h) : null,
     );
-    _listener = ImageStreamListener(_complete, onChunk: _progress);
+    _listener = ImageStreamListener(_handleComplete, onChunk: _handleProgress);
     _stream = provider.resolve(config, );
     _stream.addListener(_listener); // Called sync if already completed.
   }
 
-  void _complete(ImageInfo imageInfo, bool) {
-    callback(imageInfo);
+  void _handleComplete(ImageInfo imageInfo, bool) {
+    onComplete(imageInfo);
   }
 
-  void _progress(ImageChunkEvent event) {
-    if (progressCallback != null) { progressCallback(event); }
+  void _handleProgress(ImageChunkEvent event) {
+    if (onProgress != null) { onProgress(event); }
   }
 
   void dispose() {
@@ -160,19 +160,21 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
 
     if (_frontResolver == null && image != null && placeholder != null) {
       // Initing, need to start with the placeholder in the back:
-      _backResolver = _ImageResolver(placeholder, this, (o) => _onImageComplete(o, true));
+      _backResolver = _ImageResolver(placeholder, this, (o) => _handleImageComplete(o, true));
     }
 
-    if (image != oldImage) {
-      if (_frontResolver != null) {
-        _backResolver?.dispose();
-        _backResolver = _frontResolver;
-        _backImageInfo = _frontImageInfo;
-        _frontImageInfo = null;
-      }
-
-      _frontResolver = _ImageResolver(image, this, _onImageComplete, _onImageProgress);
+    if (image == oldImage) { return; }
+    
+    if (_frontImageInfo == null) {
+      _frontResolver?.dispose(); // Active load.
+    } else if (_frontResolver != null) {
+      _backResolver?.dispose();
+      _backResolver = _frontResolver;
+      _backImageInfo = _frontImageInfo;
+      _frontImageInfo = null;
     }
+
+    _frontResolver = _ImageResolver(image, this, _handleImageComplete, _handleImageProgress);
   }
 
   RawImage _getImage(ImageInfo imageInfo, {opacity:1.0}) {
@@ -190,7 +192,7 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
     );
   }
 
-  void _onImageComplete(ImageInfo imageInfo, [back=false]) {
+  void _handleImageComplete(ImageInfo imageInfo, [back=false]) {
     setState((){
       if (back) {
         _backImageInfo = imageInfo;
@@ -207,7 +209,7 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
     });
   }
 
-  void _onImageProgress(ImageChunkEvent event) {
+  void _handleImageProgress(ImageChunkEvent event) {
     setState(() {
       _chunkEvent = event;
     });
