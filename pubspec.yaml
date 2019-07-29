@@ -4,14 +4,15 @@ author: Grant Skinner <grant@gskinner.com>
 repository: https://github.com/gskinner/image_fade
 homepage: https://github.com/gskinner/image_fade
 
-version: 0.1.0
+version: 0.2.0
 
 environment:
-  sdk: ">=2.1.0 <3.0.0"
+  sdk: '>=2.1.0 <3.0.0'
+  flutter: ^1.6.7
 
 dependencies:
   flutter:
-    sdk: flutter
+    sdk: 'flutter'
 
 dev_dependencies:
   flutter_test:

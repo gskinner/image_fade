@@ -37,10 +37,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   int _counter = 0;
   bool _clear = true;
+  bool _error = false;
 
   void _incrementCounter() {
     setState(() {
-      if (_clear) { _clear = false; }
+      if (_clear || _error) { _clear = _error = false; }
       else { _counter = (_counter+1)%_imgs.length; }
     });
   }
@@ -48,22 +49,35 @@ class _MyHomePageState extends State<MyHomePage> {
   void _clearImage() {
     setState(() {
       _clear = true;
+      _error = false;
+    });
+  }
+
+  void _testError() {
+    setState(() {
+      _error = true;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider image;
+    if (_error) { image = NetworkImage('error.jpg'); }
+    else if (!_clear) { image = NetworkImage(_imgs[_counter]); }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Showing ' + (_clear ? 'placeholder image' : "image #$_counter from Wikimedia")),
+        title: Text('Showing ' + (_error ? 'error' : _clear ? 'placeholder' : 'image #$_counter from Wikimedia')),
       ),
 
       body: Stack(children: <Widget>[
         Positioned.fill(child: 
           ImageFade(
-            image: _clear ? null : NetworkImage(_imgs[_counter]), 
-            placeholder: AssetImage('assets/images/placeholder.png'),
-            backgroundColor: Colors.black,
+            image: image,
+            placeholder: Container(
+              color: Color(0xFFCFCDCA),
+              child: Center(child: Icon(Icons.photo, color: Colors.white30, size: 128.0,)),
+            ),
             alignment: Alignment.center,
             fit: BoxFit.cover,
             loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent event) {
@@ -72,6 +86,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: CircularProgressIndicator(
                   value: event.expectedTotalBytes == null ? 0.0 : event.cumulativeBytesLoaded / event.expectedTotalBytes
                 ),
+              );
+            },
+            errorBuilder: (BuildContext context, Widget child, dynamic exception) {
+              return Container(
+                color: Color(0xFF6F6D6A),
+                child: Center(child: Icon(Icons.warning, color: Colors.black26, size: 128.0)),
               );
             },
           )
@@ -89,6 +109,12 @@ class _MyHomePageState extends State<MyHomePage> {
           onPressed: _clearImage,
           tooltip: 'Clear',
           child: Icon(Icons.clear),
+        ),
+        SizedBox(width:10.0),
+        FloatingActionButton(
+          onPressed: _testError,
+          tooltip: 'Error',
+          child: Icon(Icons.warning),
         ),
       ]),
     );

@@ -1,32 +1,33 @@
 library image_fade;
 
-import 'package:flutter/material.dart';
+import 'dart:math';
 
-/// A widget that displays a [placeholder] image while a specified [image] loads,
-/// then cross-fades to the loaded image.
+import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
+
+/// A widget that displays a [placeholder] widget while a specified [image] loads,
+/// then cross-fades to the loaded image. Can optionally display loading progress
+/// and errors.
 ///
-/// If [image] is changed, it will cross-fade to the new image once it finishes
-/// loading.
+/// If [image] is subsequently changed, it will cross-fade to the new image once it
+/// finishes loading.
 ///
 /// Setting [image] to null will cross-fade back to the [placeholder].
 ///
 /// ```dart
 /// ImageFade(
-///   placeholder: AssetImage('assets/myPlaceholder.png'),
+///   placeholder: Image.asset('assets/myPlaceholder.png'),
 ///   image: NetworkImage('https://backend.example.com/image.png'),
 /// )
 /// ```
 
 class ImageFade extends StatefulWidget {
-  /// Creates a widget that displays a [placeholder] image while a specified [image] loads,
+  /// Creates a widget that displays a [placeholder] widget while a specified [image] loads,
   /// then cross-fades to the loaded image.
-  /// 
-  /// The [placeholder] argument must not be null.
   const ImageFade({
     Key key,
-    @required this.placeholder,
+    this.placeholder,
     this.image,
-    this.backgroundColor = Colors.transparent,
     this.fadeCurve = Curves.linear,
     this.fadeDuration = const Duration(milliseconds: 500),
 
@@ -41,18 +42,15 @@ class ImageFade extends StatefulWidget {
     this.semanticLabel,
 
     this.loadingBuilder,
+    this.errorBuilder,
   }) : 
-      assert(placeholder != null),
       super(key: key);
 
-  /// Image displayed when [image] is null or is loading initially.
-  final ImageProvider placeholder;
+  /// Widget layered behind the loaded images. Displayed when [image] is null or is loading initially.
+  final Widget placeholder;
 
-  /// The image to display displayed.
+  /// The image to display. Subsequently changing the image will fade the new image over the previous one.
   final ImageProvider image;
-
-  /// The color that will display behind / around images.
-  final Color backgroundColor;
 
   /// The curve of the fade-in animation.
   final Curve fadeCurve;
@@ -87,35 +85,77 @@ class ImageFade extends StatefulWidget {
   /// A builder that specifies the widget to display while an image is loading. See [Image.loadingBuilder] for more information.
   final ImageLoadingBuilder loadingBuilder;
 
+  /// A builder that specifies the widget to display if an error occurs while an image is loading.
+  /// This will be faded in over previous content, so you may want to set an opaque background on it.
+  final ImageFadeErrorBuilder errorBuilder;
+
   @override
   State<StatefulWidget> createState() => _ImageFadeState();
 }
 
-class _ImageResolver {
-  ImageStream _stream;
-  Function(ImageInfo) onComplete;
-  Function(ImageChunkEvent) onProgress;
-  ImageStreamListener _listener;
+/// Signature used by [ImageFader.errorBuilder] to build the widget that will
+/// be displayed if an error occurs while loading an image.
+typedef ImageFadeErrorBuilder = Widget Function(
+  BuildContext context,
+  Widget child,
+  dynamic exception,
+);
 
+class _ImageResolver {
+  bool success = false;
+  dynamic exception;
   ImageChunkEvent chunkEvent;
 
-  _ImageResolver(ImageProvider provider, _ImageFadeState state, this.onComplete, [this.onProgress]) {
-    double w = state.widget.width, h = state.widget.height;
-    ImageConfiguration config = createLocalImageConfiguration(
-      state.context,
-      size: w != null && h != null ? Size(w, h) : null,
-    );
-    _listener = ImageStreamListener(_handleComplete, onChunk: _handleProgress);
-    _stream = provider.resolve(config, );
+  Function() onComplete;
+  Function() onError;
+  Function() onProgress;
+
+  ImageStream _stream;
+  ImageStreamListener _listener;
+  ImageInfo _imageInfo;
+
+  _ImageResolver(
+    ImageProvider provider, 
+    BuildContext context, {
+    this.onComplete,
+    this.onError,
+    this.onProgress,
+    double width, double height
+  }) {
+    Size size = width != null && height != null ? Size(width, height) : null;
+    ImageConfiguration config = createLocalImageConfiguration(context, size: size);
+    _listener = ImageStreamListener(_handleComplete, onChunk: _handleProgress, onError: _handleError);
+    _stream = provider.resolve(config);
     _stream.addListener(_listener); // Called sync if already completed.
   }
 
-  void _handleComplete(ImageInfo imageInfo, bool) {
-    onComplete(imageInfo);
+  ui.Image get image {
+    return _imageInfo?.image;
+  }
+
+  bool get inLoad {
+    return !success && !error;
+  }
+
+  bool get error {
+    return exception != null;
+  }
+
+  void _handleComplete(ImageInfo imageInfo, bool _) {
+    _imageInfo = imageInfo;
+    chunkEvent = null;
+    success = true;
+    if (onComplete != null) { onComplete(); }
   }
 
   void _handleProgress(ImageChunkEvent event) {
-    if (onProgress != null) { onProgress(event); }
+    chunkEvent = event;
+    if (onProgress != null) { onProgress(); }
+  }
+
+  void _handleError(dynamic exc, StackTrace _) {
+    exception = exc;
+    if (onError != null) { onError(); }
   }
 
   void dispose() {
@@ -124,17 +164,16 @@ class _ImageResolver {
 }
 
 class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
-  ImageInfo _backImageInfo;
-  ImageInfo _frontImageInfo;
-  _ImageResolver _backResolver;
-  _ImageResolver _frontResolver;
+  _ImageResolver _resolver;
+  Widget _front;
+  Widget _back;
   AnimationController _controller;
-  Animation _animation;
-  ImageChunkEvent _chunkEvent;
+  CurvedAnimation _animationIn;
+  CurvedAnimation _animationOut;
 
   @override
   void initState() {
-    _controller = AnimationController(vsync: this, value: 1.0);
+    _controller = AnimationController(vsync: this);
     _controller.addListener((){ setState(() {}); });
     super.initState();
   }
@@ -153,36 +192,57 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
   }
 
   void _update(BuildContext context, [ImageFade old]) {
-    final ImageProvider placeholder = widget.placeholder;
-    final ImageProvider image = widget.image ?? placeholder;
-    final ImageProvider oldPlaceholder = old?.placeholder;
-    final ImageProvider oldImage = old?.image ?? oldPlaceholder;
-
-    if (_frontResolver == null && image != null && placeholder != null) {
-      // Initing, need to start with the placeholder in the back:
-      _backResolver = _ImageResolver(placeholder, this, (o) => _handleImageComplete(o, true));
-    }
+    final ImageProvider image = widget.image;
+    final ImageProvider oldImage = old?.image;
 
     if (image == oldImage) { return; }
-    
-    if (_frontImageInfo == null) {
-      _frontResolver?.dispose(); // Active load.
-    } else if (_frontResolver != null) {
-      _backResolver?.dispose();
-      _backResolver = _frontResolver;
-      _backImageInfo = _frontImageInfo;
-      _frontImageInfo = null;
+
+    if (_resolver != null) {
+      _resolver.dispose();
+      if (!_resolver.inLoad) { _back = _front; }
+    } else {
+      _back = null;
     }
 
-    _frontResolver = _ImageResolver(image, this, _handleImageComplete, _handleImageProgress);
+    _controller.value = 0.0;
+    if (image == null) {
+      _resolver = null;
+      _controller.forward(from: 0.5);
+    } else {
+      _resolver = _ImageResolver(image, context,
+        onError: _handleComplete,
+        onProgress: _handleProgress,
+        onComplete: _handleComplete,
+        width: widget.width,
+        height: widget.height
+      );
+    }
   }
 
-  RawImage _getImage(ImageInfo imageInfo, {opacity:1.0}) {
-    return RawImage(
-      image: imageInfo?.image,
-      color: Color.fromRGBO(255, 255, 255, opacity),
-      colorBlendMode: BlendMode.modulate,
+  void _handleProgress() {
+    setState((){});
+  }
 
+  void _handleComplete() {
+    double m = 1 + 0.5; // defines the length of the fade out animation (ex. 1.5 = out is half as long as in)
+    setState((){
+      _controller.duration = widget.fadeDuration * m;
+      _animationIn = CurvedAnimation(
+
+        parent: _controller,
+        curve: Interval(0.0, 1/m, curve: widget.fadeCurve),
+      );
+      _animationOut = CurvedAnimation(
+        parent: _controller,
+        curve: Interval(1/m, 1.0, curve: Curves.linear),
+      );
+      _controller.forward(from: 0.0);
+    });
+  }
+
+  RawImage _getImage(ui.Image image) {
+    return RawImage(
+      image: image,
       width: widget.width,
       height: widget.height,
       fit: widget.fit,
@@ -192,43 +252,34 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
     );
   }
 
-  void _handleImageComplete(ImageInfo imageInfo, [back=false]) {
-    setState((){
-      if (back) {
-        _backImageInfo = imageInfo;
-      } else {
-        _frontImageInfo = imageInfo;
-        _controller.duration = widget.fadeDuration;
-        _animation = CurvedAnimation(
-          parent: _controller,
-          curve: widget.fadeCurve
-        );
-        _controller.forward(from: 0.0);
-        _chunkEvent = null;
-      }
-    });
-  }
-
-  void _handleImageProgress(ImageChunkEvent event) {
-    setState(() {
-      _chunkEvent = event;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     List<Widget> kids = [];
-    bool frontIsOpaque = _frontImageInfo != null && _animation.value == 1.0;
-    if (_backImageInfo != null && !frontIsOpaque) { kids.add(_getImage(_backImageInfo)); }
+    Widget back, front;
 
-    Widget front = _getImage(_frontImageInfo, opacity: _animation?.value ?? 1.0);
-    if (widget.loadingBuilder != null) {
-      front = widget.loadingBuilder(context, front, _chunkEvent);
+    if (_back != null && _animationOut.value < 1.0) {
+      back = Opacity(child: _back, opacity: 1.0 - _animationOut.value);
     }
 
-    kids.add(front);
+    if (_resolver != null) {
+      _front = _getImage(_resolver.image);
+      if (_resolver.inLoad && widget.loadingBuilder != null) {
+        front = widget.loadingBuilder(context, _front, _resolver.chunkEvent);
+      } else {
+        if (_resolver.error && widget.errorBuilder != null) {
+          _front = widget.errorBuilder(context, _front, _resolver.exception);
+        }
+        front = Opacity(child: _front, opacity: _animationIn?.value ?? 1.0);
+      }
+    } else {
+      _front = null;
+    }
+
+    if (widget.placeholder != null) { kids.add(widget.placeholder); }
+    if (back != null) { kids.add(back); }
+    if (front != null) { kids.add(front); }
+
     Widget content = Container(
-      color: widget.backgroundColor,
       width: widget.width,
       height: widget.height,
       child: Stack(children: kids, fit: StackFit.passthrough,)
@@ -249,8 +300,8 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _backResolver?.dispose();
-    _frontResolver?.dispose(); 
+    _resolver?.dispose(); 
+    _controller.dispose();
     super.dispose();
   }
 }
