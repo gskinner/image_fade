@@ -1,7 +1,5 @@
 library image_fade;
 
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 
@@ -106,9 +104,9 @@ class _ImageResolver {
   dynamic exception;
   ImageChunkEvent chunkEvent;
 
-  Function() onComplete;
-  Function() onError;
-  Function() onProgress;
+  Function(_ImageResolver resolver) onComplete;
+  Function(_ImageResolver resolver) onError;
+  Function(_ImageResolver resolver) onProgress;
 
   ImageStream _stream;
   ImageStreamListener _listener;
@@ -145,17 +143,17 @@ class _ImageResolver {
     _imageInfo = imageInfo;
     chunkEvent = null;
     success = true;
-    if (onComplete != null) { onComplete(); }
+    if (onComplete != null) { onComplete(this); }
   }
 
   void _handleProgress(ImageChunkEvent event) {
     chunkEvent = event;
-    if (onProgress != null) { onProgress(); }
+    if (onProgress != null) { onProgress(this); }
   }
 
   void _handleError(dynamic exc, StackTrace _) {
     exception = exc;
-    if (onError != null) { onError(); }
+    if (onError != null) { onError(this); }
   }
 
   void dispose() {
@@ -167,14 +165,14 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
   _ImageResolver _resolver;
   Widget _front;
   Widget _back;
+
   AnimationController _controller;
-  CurvedAnimation _animationIn;
-  CurvedAnimation _animationOut;
+  Widget _fadeFront;
+  Widget _fadeBack;
 
   @override
   void initState() {
     _controller = AnimationController(vsync: this);
-    _controller.addListener((){ setState(() {}); });
     super.initState();
   }
 
@@ -194,50 +192,55 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
   void _update(BuildContext context, [ImageFade old]) {
     final ImageProvider image = widget.image;
     final ImageProvider oldImage = old?.image;
-
     if (image == oldImage) { return; }
-
+    _back = null;
     if (_resolver != null) {
       _resolver.dispose();
-      if (!_resolver.inLoad) { _back = _front; }
-    } else {
-      _back = null;
+      if (!_resolver.inLoad) { _back = _fadeBack = _front; }
     }
-
-    _controller.value = 0.0;
-    if (image == null) {
-      _resolver = null;
-      _controller.forward(from: 0.5);
-    } else {
-      _resolver = _ImageResolver(image, context,
-        onError: _handleComplete,
-        onProgress: _handleProgress,
-        onComplete: _handleComplete,
-        width: widget.width,
-        height: widget.height
-      );
+    _front = null;
+    _resolver = image == null ? null : _ImageResolver(image, context,
+      onError: _handleComplete,
+      onProgress: _handleProgress,
+      onComplete: _handleComplete,
+      width: widget.width,
+      height: widget.height
+    );
+  
+    if (_back != null && _resolver == null) {
+      _buildTransition();
     }
   }
 
-  void _handleProgress() {
+  void _handleProgress(_ImageResolver _) {
     setState((){});
   }
 
-  void _handleComplete() {
-    double m = 1 + 0.5; // defines the length of the fade out animation (ex. 1.5 = out is half as long as in)
-    setState((){
-      _controller.duration = widget.fadeDuration * m;
-      _animationIn = CurvedAnimation(
+  void _handleComplete(_ImageResolver resolver) {
+    _front = resolver.success ? _getImage(resolver.image)
+      : widget.errorBuilder?.call(context, _front, resolver.exception);
+    _buildTransition();
+  }
 
+  void _buildTransition() {
+    bool out = _front == null;
+    _controller.duration = widget.fadeDuration * (out ? 1 : 3/2); // Fade in for fadeDuration, out for 1/2 as long.
+    _fadeFront = _front == null ? null : FadeTransition(
+      child: _front,
+      opacity: CurvedAnimation(
         parent: _controller,
-        curve: Interval(0.0, 1/m, curve: widget.fadeCurve),
-      );
-      _animationOut = CurvedAnimation(
+        curve: Interval(0.0, 2/3, curve: widget.fadeCurve),
+      )
+    );
+    _fadeBack = _back == null ? null : FadeTransition(
+      child: _back,
+      opacity: Tween<double>(begin: 1.0, end: 0).animate(CurvedAnimation(
         parent: _controller,
-        curve: Interval(1/m, 1.0, curve: Curves.linear),
-      );
-      _controller.forward(from: 0.0);
-    });
+        curve: Interval(out ? 0.0 : 2/3, 1.0, curve: Curves.linear),
+      ))
+    );
+    if (_front != null || _back != null) { _controller.forward(from: 0); }
+    setState((){});
   }
 
   RawImage _getImage(ui.Image image) {
@@ -255,24 +258,10 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     List<Widget> kids = [];
-    Widget back, front;
-
-    if (_back != null && _animationOut.value < 1.0) {
-      back = Opacity(child: _back, opacity: 1.0 - _animationOut.value);
-    }
-
-    if (_resolver != null) {
-      _front = _getImage(_resolver.image);
-      if (_resolver.inLoad && widget.loadingBuilder != null) {
-        front = widget.loadingBuilder(context, _front, _resolver.chunkEvent);
-      } else {
-        if (_resolver.error && widget.errorBuilder != null) {
-          _front = widget.errorBuilder(context, _front, _resolver.exception);
-        }
-        front = Opacity(child: _front, opacity: _animationIn?.value ?? 1.0);
-      }
-    } else {
-      _front = null;
+    
+    Widget front = _fadeFront, back = _fadeBack;
+    if (_resolver != null && _resolver.inLoad && widget.loadingBuilder != null) {
+      front = widget.loadingBuilder(context, _front, _resolver.chunkEvent);
     }
 
     if (widget.placeholder != null) { kids.add(widget.placeholder); }
