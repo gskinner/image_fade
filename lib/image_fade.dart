@@ -109,10 +109,16 @@ class _ImageResolver {
   ImageInfo? _imageInfo;
 
   _ImageResolver(ImageProvider provider, BuildContext context,
-      {this.onComplete, this.onError, this.onProgress, double? width, double? height}) {
+      {this.onComplete,
+      this.onError,
+      this.onProgress,
+      double? width,
+      double? height}) {
     Size? size = width != null && height != null ? Size(width, height) : null;
-    ImageConfiguration config = createLocalImageConfiguration(context, size: size);
-    _listener = ImageStreamListener(_handleComplete, onChunk: _handleProgress, onError: _handleError);
+    ImageConfiguration config =
+        createLocalImageConfiguration(context, size: size);
+    _listener = ImageStreamListener(_handleComplete,
+        onChunk: _handleProgress, onError: _handleError);
     _stream = provider.resolve(config);
     _stream.addListener(_listener); // Called sync if already completed.
   }
@@ -175,7 +181,8 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _update(context); // Can't call this in initState because createLocalImageConfiguration throws errors.
+    _update(
+        context); // Can't call this in initState because createLocalImageConfiguration throws errors.
   }
 
   @override
@@ -218,14 +225,16 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
   }
 
   void _handleComplete(_ImageResolver resolver) {
-    _front =
-        resolver.success ? _getImage(resolver.image) : widget.errorBuilder?.call(context, _front, resolver.exception);
+    _front = resolver.success
+        ? _getImage(resolver.image)
+        : widget.errorBuilder?.call(context, _front, resolver.exception);
     _buildTransition();
   }
 
   void _buildTransition() {
     bool out = _front == null;
-    _controller.duration = widget.fadeDuration * (out ? 1 : 3 / 2); // Fade in for fadeDuration, out for 1/2 as long.
+    _controller.duration = widget.fadeDuration *
+        (out ? 1 : 3 / 2); // Fade in for fadeDuration, out for 1/2 as long.
     _fadeFront = _front == null
         ? null
         : FadeTransition(
@@ -265,7 +274,10 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
     List<Widget> kids = [];
 
     Widget? front = _fadeFront, back = _fadeBack;
-    if (_resolver != null && _resolver!.inLoad && widget.loadingBuilder != null && _front != null) {
+    if (_resolver != null &&
+        _resolver!.inLoad &&
+        widget.loadingBuilder != null &&
+        _front != null) {
       front = widget.loadingBuilder!(context, _front!, _resolver!.chunkEvent);
     }
 
