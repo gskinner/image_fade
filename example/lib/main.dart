@@ -17,9 +17,9 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  MyHomePage({Key? key, this.title}) : super(key: key);
 
-  final String title;
+  final String? title;
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -41,8 +41,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _incrementCounter() {
     setState(() {
-      if (_clear || _error) { _clear = _error = false; }
-      else { _counter = (_counter+1)%_imgs.length; }
+      if (_clear || _error) {
+        _clear = _error = false;
+      } else {
+        _counter = (_counter + 1) % _imgs.length;
+      }
     });
   }
 
@@ -61,56 +64,68 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    ImageProvider image;
-    if (_error) { image = NetworkImage('error.jpg'); }
-    else if (!_clear) { image = NetworkImage(_imgs[_counter]); }
+    ImageProvider? image;
+    if (_error) {
+      image = NetworkImage('error.jpg');
+    } else if (!_clear) {
+      image = NetworkImage(_imgs[_counter]);
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Showing ' + (_error ? 'error' : _clear ? 'placeholder' : 'image #$_counter from Wikimedia')),
+        title: Text('Showing ' +
+            (_error
+                ? 'error'
+                : _clear
+                    ? 'placeholder'
+                    : 'image #$_counter from Wikimedia')),
       ),
-
       body: Stack(children: <Widget>[
-        Positioned.fill(child: 
-          ImageFade(
-            image: image,
-            placeholder: Container(
-              color: Color(0xFFCFCDCA),
-              child: Center(child: Icon(Icons.photo, color: Colors.white30, size: 128.0,)),
-            ),
-            alignment: Alignment.center,
-            fit: BoxFit.cover,
-            loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent event) {
-              if (event == null) { return child; }
-              return Center(
-                child: CircularProgressIndicator(
-                  value: event.expectedTotalBytes == null ? 0.0 : event.cumulativeBytesLoaded / event.expectedTotalBytes
-                ),
-              );
-            },
-            errorBuilder: (BuildContext context, Widget child, dynamic exception) {
-              return Container(
-                color: Color(0xFF6F6D6A),
-                child: Center(child: Icon(Icons.warning, color: Colors.black26, size: 128.0)),
-              );
-            },
-          )
-        )
+        Positioned.fill(
+            child: ImageFade(
+          image: image,
+          placeholder: Container(
+            color: Color(0xFFCFCDCA),
+            child: Center(
+                child: Icon(
+              Icons.photo,
+              color: Colors.white30,
+              size: 128.0,
+            )),
+          ),
+          alignment: Alignment.center,
+          fit: BoxFit.cover,
+          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? event) {
+            if (event == null) {
+              return child;
+            }
+            return Center(
+              child: CircularProgressIndicator(
+                  value:
+                      event.expectedTotalBytes == null ? 0.0 : event.cumulativeBytesLoaded / event.expectedTotalBytes!),
+            );
+          },
+          errorBuilder: (BuildContext context, Widget? child, dynamic exception) {
+            return Container(
+              color: Color(0xFF6F6D6A),
+              child: Center(child: Icon(Icons.warning, color: Colors.black26, size: 128.0)),
+            );
+          },
+        ))
       ]),
-
       floatingActionButton: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
         FloatingActionButton(
           onPressed: _incrementCounter,
           tooltip: 'Next',
           child: Icon(Icons.navigate_next),
         ),
-        SizedBox(width:10.0),
+        SizedBox(width: 10.0),
         FloatingActionButton(
           onPressed: _clearImage,
           tooltip: 'Clear',
           child: Icon(Icons.clear),
         ),
-        SizedBox(width:10.0),
+        SizedBox(width: 10.0),
         FloatingActionButton(
           onPressed: _testError,
           tooltip: 'Error',
