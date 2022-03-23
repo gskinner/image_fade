@@ -1,7 +1,5 @@
 # ImageFade
 
-**Requires Flutter 1.6.7 or higher.**
-
 A widget for Flutter that displays a `placeholder` widget while a specified `image` loads, then cross-fades to the loaded image. Also handles progress and errors.
 
 If `image` is changed, it will cross-fade to the new image once it is finished loading. Setting `image` to `null` will cross-fade back to the placeholder.
