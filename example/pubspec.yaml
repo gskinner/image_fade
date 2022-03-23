@@ -1,7 +1,7 @@
 name: image_fade_example
 description: Load and cross fade images
-author: Grant Skinner
-repository: TODO!
+repository: https://github.com/gskinner/image_fade/tree/master/example
+publish_to: none
 
 version: 1.0.0+1
 

@@ -68,3 +68,6 @@ build/
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+example/macos/Flutter/ephemeral/flutter_export_environment.sh
+example/ios/Flutter/flutter_export_environment.sh
+example/macos/Flutter/ephemeral/Flutter-Generated.xcconfig
