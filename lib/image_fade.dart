@@ -256,7 +256,6 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
   }
 
   Widget? _buildFade({Widget? child, required Animation<double> opacity}) {
-    print('is RawImage: ${child is RawImage}');
     return child == null
         ? null
         : (child is RawImage)

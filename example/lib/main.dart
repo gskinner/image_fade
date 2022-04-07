@@ -95,25 +95,32 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           alignment: Alignment.center,
           fit: BoxFit.cover,
-          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? event) {
+          loadingBuilder:
+              (BuildContext context, Widget child, ImageChunkEvent? event) {
             if (event == null) {
               return child;
             }
             return Center(
               child: CircularProgressIndicator(
-                  value:
-                      event.expectedTotalBytes == null ? 0.0 : event.cumulativeBytesLoaded / event.expectedTotalBytes!),
+                  value: event.expectedTotalBytes == null
+                      ? 0.0
+                      : event.cumulativeBytesLoaded /
+                          event.expectedTotalBytes!),
             );
           },
-          errorBuilder: (BuildContext context, Widget? child, dynamic exception) {
+          errorBuilder:
+              (BuildContext context, Widget? child, dynamic exception) {
             return Container(
               color: Color(0xFF6F6D6A),
-              child: Center(child: Icon(Icons.warning, color: Colors.black26, size: 128.0)),
+              child: Center(
+                  child:
+                      Icon(Icons.warning, color: Colors.black26, size: 128.0)),
             );
           },
         ))
       ]),
-      floatingActionButton: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+      floatingActionButton:
+          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
         FloatingActionButton(
           onPressed: _incrementCounter,
           tooltip: 'Next',
