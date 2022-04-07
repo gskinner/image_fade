@@ -233,31 +233,38 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
 
   void _buildTransition() {
     bool out = _front == null;
-    _controller.duration = widget.fadeDuration *
-        (out ? 1 : 3 / 2); // Fade in for fadeDuration, out for 1/2 as long.
-    _fadeFront = _front == null
-        ? null
-        : FadeTransition(
-            child: _front,
-            opacity: CurvedAnimation(
-              parent: _controller,
-              curve: Interval(0.0, 2 / 3, curve: widget.fadeCurve),
-            ));
-    _fadeBack = _back == null
-        ? null
-        : FadeTransition(
-            child: _back,
-            opacity: Tween<double>(begin: 1.0, end: 0).animate(CurvedAnimation(
-              parent: _controller,
-              curve: Interval(out ? 0.0 : 2 / 3, 1.0, curve: Curves.linear),
-            )));
+    // Fade in for fadeDuration, out for 1/2 as long:
+    _controller.duration = widget.fadeDuration * (out ? 1 : 3 / 2);
+    _fadeFront = _buildFade(
+        child: _front,
+        opacity: CurvedAnimation(
+          parent: _controller,
+          curve: Interval(0.0, 2 / 3, curve: widget.fadeCurve),
+        ));
+
+    _fadeBack = _buildFade(
+        child: _back,
+        opacity: Tween<double>(begin: 1.0, end: 0).animate(CurvedAnimation(
+          parent: _controller,
+          curve: Interval(out ? 0.0 : 2 / 3, 1.0),
+        )));
+
     if (_front != null || _back != null) {
       _controller.forward(from: 0);
     }
     setState(() {});
   }
 
-  RawImage _getImage(ui.Image? image) {
+  Widget? _buildFade({Widget? child, required Animation<double> opacity}) {
+    print('is RawImage: ${child is RawImage}');
+    return child == null
+        ? null
+        : (child is RawImage)
+            ? _getImage(child.image, opacity: opacity)
+            : FadeTransition(child: child, opacity: opacity);
+  }
+
+  RawImage _getImage(ui.Image? image, {Animation<double>? opacity}) {
     return RawImage(
       image: image,
       width: widget.width,
@@ -266,6 +273,7 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
       alignment: widget.alignment,
       repeat: widget.repeat,
       matchTextDirection: widget.matchTextDirection,
+      opacity: opacity,
     );
   }
 
