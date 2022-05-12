@@ -3,14 +3,14 @@ library image_fade;
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 
-/// Signature used by [ImageFader.errorBuilder] to build the widget that will be displayed
+/// Signature used by [ImageFade.errorBuilder] to build the widget that will be displayed
 /// if an error occurs while loading an image.
 typedef ImageFadeErrorBuilder = Widget Function(
   BuildContext context,
   Object exception,
 );
 
-/// Signature used by [ImageFader.loadingBuilder] to build the widget that will be displayed
+/// Signature used by [ImageFade.loadingBuilder] to build the widget that will be displayed
 /// while an image is loading. `progress` returns a value between 0 and 1 indicating load progress.
 typedef ImageFadeLoadingBuilder = Widget Function(
   BuildContext context,
