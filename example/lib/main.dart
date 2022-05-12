@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:image_fade/image_fade.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -11,15 +13,13 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.yellow,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key? key, this.title}) : super(key: key);
-
-  final String? title;
+  const MyHomePage({Key? key}) : super(key: key);
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -57,86 +57,71 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _testError() {
-    setState(() {
-      _error = true;
-    });
+    setState(() => _error = true);
   }
 
   @override
   Widget build(BuildContext context) {
     ImageProvider? image;
     if (_error) {
-      image = NetworkImage('error.jpg');
+      image = const NetworkImage('error.jpg');
     } else if (!_clear) {
       image = NetworkImage(_imgs[_counter]);
     }
 
+    String title = _error
+        ? 'error'
+        : _clear
+            ? 'placeholder'
+            : 'image #$_counter from Wikimedia';
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Showing ' +
-            (_error
-                ? 'error'
-                : _clear
-                    ? 'placeholder'
-                    : 'image #$_counter from Wikimedia')),
-      ),
+      appBar: AppBar(title: Text('Showing ' + title)),
       body: Stack(children: <Widget>[
         Positioned.fill(
-            child: ImageFade(
-          image: image,
-          placeholder: Container(
-            color: Color(0xFFCFCDCA),
-            child: Center(
+          child: ImageFade(
+            image: image,
+            placeholder: Container(
+              color: const Color(0xFFCFCDCA),
+              child: const Center(
                 child: Icon(
-              Icons.photo,
-              color: Colors.white30,
-              size: 128.0,
-            )),
+                  Icons.photo,
+                  color: Colors.white30,
+                  size: 128.0,
+                ),
+              ),
+            ),
+            alignment: Alignment.center,
+            fit: BoxFit.cover,
+            loadingBuilder: (_, double progress, __) =>
+                Center(child: CircularProgressIndicator(value: progress)),
+            errorBuilder: (_, __) => Container(
+              color: const Color(0xFF6F6D6A),
+              alignment: Alignment.center,
+              child:
+                  const Icon(Icons.warning, color: Colors.black26, size: 128.0),
+            ),
           ),
-          alignment: Alignment.center,
-          fit: BoxFit.cover,
-          loadingBuilder:
-              (BuildContext context, Widget child, ImageChunkEvent? event) {
-            if (event == null) {
-              return child;
-            }
-            return Center(
-              child: CircularProgressIndicator(
-                  value: event.expectedTotalBytes == null
-                      ? 0.0
-                      : event.cumulativeBytesLoaded /
-                          event.expectedTotalBytes!),
-            );
-          },
-          errorBuilder:
-              (BuildContext context, Widget? child, dynamic exception) {
-            return Container(
-              color: Color(0xFF6F6D6A),
-              child: Center(
-                  child:
-                      Icon(Icons.warning, color: Colors.black26, size: 128.0)),
-            );
-          },
-        ))
+        )
       ]),
       floatingActionButton:
           Row(mainAxisAlignment: MainAxisAlignment.end, children: [
         FloatingActionButton(
           onPressed: _incrementCounter,
           tooltip: 'Next',
-          child: Icon(Icons.navigate_next),
+          child: const Icon(Icons.navigate_next),
         ),
-        SizedBox(width: 10.0),
+        const SizedBox(width: 10.0),
         FloatingActionButton(
           onPressed: _clearImage,
           tooltip: 'Clear',
-          child: Icon(Icons.clear),
+          child: const Icon(Icons.clear),
         ),
-        SizedBox(width: 10.0),
+        const SizedBox(width: 10.0),
         FloatingActionButton(
           onPressed: _testError,
           tooltip: 'Error',
-          child: Icon(Icons.warning),
+          child: const Icon(Icons.warning),
         ),
       ]),
     );
