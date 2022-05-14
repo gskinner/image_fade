@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.0] - 2022-05-14
 ### Added
-- Added `durationFast` — if specified will be used for fading in placeholder, error, and synchronously loaded images
+- Added `syncDuration` — if specified will be used for fading in placeholder, error, and synchronously loaded images
 
 ### Changed
 - Renamed `fadeDuration` to `duration` and `fadeCurve` to `curve`

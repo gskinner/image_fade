@@ -42,7 +42,7 @@ class ImageFade extends StatefulWidget {
     this.image,
     this.curve = Curves.linear,
     this.duration = const Duration(milliseconds: 300),
-    this.durationFast,
+    this.syncDuration,
     this.width,
     this.height,
     this.fit = BoxFit.scaleDown,
@@ -67,9 +67,10 @@ class ImageFade extends StatefulWidget {
   /// The duration of the fade-in animation.
   final Duration duration;
 
-  /// An optional duration for "fast" changes: fading in a placeholder, error, or images that load synchronously.
+  /// An optional duration for fading in a synchronously loaded image (ex. from memory), error, or placeholder.
+  /// For example, you could set this to `Duration.zero` to immediately display images that are already loaded.
   /// If omitted, [duration] will be used.
-  final Duration? durationFast;
+  final Duration? syncDuration;
 
   /// The width to display at. See [Image.width] for more information.
   final double? width;
@@ -190,7 +191,7 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
 
     // use the "fast" duration if sync load, error, or placeholder:
     bool fast = (_sync != false || _resolver?.error == true || out);
-    Duration duration = (fast ? widget.durationFast : null) ?? widget.duration;
+    Duration duration = (fast ? widget.syncDuration : null) ?? widget.duration;
 
     // Fade in for duration, out for 1/2 as long:
     _controller.duration = duration * (out ? 1 : 3 / 2);

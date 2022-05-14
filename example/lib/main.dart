@@ -87,7 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
           duration: const Duration(milliseconds: 900),
 
           // if the image is loaded synchronously (ex. from memory), fade in faster:
-          durationFast: const Duration(milliseconds: 150),
+          syncDuration: const Duration(milliseconds: 150),
 
           // supports most properties of Image:
           alignment: Alignment.center,
