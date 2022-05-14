@@ -6,15 +6,22 @@ If `image` is changed, it will cross-fade to the new image once it is finished l
 
 ![example image](https://gskinner.github.io/image_fade/example_v0_2_0.gif)
 
-You can set `fadeDuration` and `fadeCurve`, as well as most `Image` properties:
+You can set `duration` and `curve`, as well as most `Image` properties:
 `width`, `height`, `fit`, `alignment`, `repeat`, `matchTextDirection`, `excludeFromSemantics` and `semanticLabel`.
 
-You can also specify a `loadingBuilder` that will display load progress any time a new image is loaded, and an `errorBuilder` that will display if an error occurs while loading an image.
+You can also specify a `loadingBuilder` that will display load progress any time a new image is loaded, and an `errorBuilder` that will display if an error occurs while loading an image. Lastly, the optional `durationFast` is used when
+fading in a placeholder, error, or synchronously loaded image.
 
 ``` dart
 ImageFade(
   // whenever the image changes, it will be loaded, and then faded in: 
   image: NetworkImage(url),
+
+  // slow fade for newly loaded images:
+  duration: const Duration(milliseconds: 900),
+
+  // if the image is loaded synchronously (ex. from memory), fade in faster:
+  durationFast: const Duration(milliseconds: 150),
 
   // supports most properties of Image:
   alignment: Alignment.center,
@@ -45,5 +52,4 @@ ImageFade(
 The published version of this package is [availble on pub.dev](https://pub.dev/packages/image_fade).
 
 ## Example
-
 See the example directory for a simple example.

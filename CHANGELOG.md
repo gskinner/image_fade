@@ -4,10 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2022-05-14
+### Added
+- Added `durationFast` — if specified will be used for fading in placeholder, error, and synchronously loaded images
+
+### Changed
+- Renamed `fadeDuration` to `duration` and `fadeCurve` to `curve`
+- Optimized `loadingBuilder` to use `AnimatedBuilder`
+- Deferred call to `errorBuilder` until `build` to avoid context related issues
+- Switch dependency from `flutter/material` to `flutter/widgets`
+
 ## [0.5.0] - 2022-05-12
 ### Changed
-- Fixed an issue with loadingBuilder introduced with NNBD
-- Changed the signature for loadingBuilder & errorBuilder to make them easier to use
+- Fixed an issue with `loadingBuilder` introduced with NNBD
+- Changed the signature for `loadingBuilder` & `errorBuilder` to make them easier to use
 - Updated the example
 
 ## [0.4.0] - 2022-04-07
