@@ -113,7 +113,7 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
   Widget? _front;
   Widget? _back;
 
-  late AnimationController _controller;
+  late final AnimationController _controller;
   Widget? _fadeFront;
   Widget? _fadeBack;
 
@@ -316,8 +316,8 @@ class _ImageResolver {
   final Function(_ImageResolver resolver) onComplete;
   final Function(_ImageResolver resolver) onError;
 
-  late ImageStream _stream;
-  late ImageStreamListener _listener;
+  late final ImageStream _stream;
+  late final ImageStreamListener _listener;
   ImageInfo? _imageInfo;
   bool _complete = false;
 
