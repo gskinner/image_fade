@@ -40,8 +40,9 @@ class ImageFade extends StatefulWidget {
     Key? key,
     this.placeholder,
     this.image,
-    this.fadeCurve = Curves.linear,
-    this.fadeDuration = const Duration(milliseconds: 500),
+    this.curve = Curves.linear,
+    this.duration = const Duration(milliseconds: 300),
+    this.durationFast,
     this.width,
     this.height,
     this.fit = BoxFit.scaleDown,
@@ -61,10 +62,14 @@ class ImageFade extends StatefulWidget {
   final ImageProvider? image;
 
   /// The curve of the fade-in animation.
-  final Curve fadeCurve;
+  final Curve curve;
 
   /// The duration of the fade-in animation.
-  final Duration fadeDuration;
+  final Duration duration;
+
+  /// An optional duration for "fast" changes: fading in a placeholder, error, or images that load synchronously.
+  /// If omitted, [duration] will be used.
+  final Duration? durationFast;
 
   /// The width to display at. See [Image.width] for more information.
   final double? width;
@@ -111,6 +116,9 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
   Widget? _fadeFront;
   Widget? _fadeBack;
 
+  bool? _sync; // could use onImage synchronousCall, but this is more forgiving
+  bool _shouldBuildFront = false;
+
   @override
   void initState() {
     _controller = AnimationController(vsync: this);
@@ -137,6 +145,7 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
     if (image == oldImage) return;
 
     _back = null;
+    _shouldBuildFront = false;
 
     if (_resolver != null) {
       // move previous loaded image to back & cancel any active loads.
@@ -145,14 +154,13 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
     }
 
     // load the new image:
-    _front = null;
+    _front = _sync = null;
     _resolver = image == null
         ? null
         : _ImageResolver(
             image,
             context,
             onError: _handleComplete,
-            onProgress: _handleProgress,
             onComplete: _handleComplete,
             width: widget.width,
             height: widget.height,
@@ -162,11 +170,15 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
     if (_back != null && _resolver == null) _buildTransition();
   }
 
-  void _handleProgress(_ImageResolver _) {
-    setState(() {});
+  void _handleComplete(_ImageResolver resolver) {
+    if (_sync == null) _sync = true;
+    // defer building the front content until build so we have an active context.
+    setState(() => _shouldBuildFront = true);
   }
 
-  void _handleComplete(_ImageResolver resolver) {
+  void _buildFront(BuildContext context) {
+    _shouldBuildFront = false;
+    _ImageResolver resolver = _resolver!;
     _front = resolver.error
         ? widget.errorBuilder?.call(context, resolver.exception!)
         : _getImage(resolver.image);
@@ -176,14 +188,18 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
   void _buildTransition() {
     final bool out = _front == null; // no new image
 
-    // Fade in for fadeDuration, out for 1/2 as long:
-    _controller.duration = widget.fadeDuration * (out ? 1 : 3 / 2);
+    // use the "fast" duration if sync load, error, or placeholder:
+    bool fast = (_sync != false || _resolver?.error == true || out);
+    Duration duration = (fast ? widget.durationFast : null) ?? widget.duration;
+
+    // Fade in for duration, out for 1/2 as long:
+    _controller.duration = duration * (out ? 1 : 3 / 2);
 
     _fadeFront = _buildFade(
       child: _front,
       opacity: CurvedAnimation(
         parent: _controller,
-        curve: Interval(0.0, 2 / 3, curve: widget.fadeCurve),
+        curve: Interval(0.0, 2 / 3, curve: widget.curve),
       ),
     );
 
@@ -197,10 +213,7 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
       ),
     );
 
-    if (_front != null || _back != null) {
-      _controller.forward(from: 0);
-    }
-    setState(() {});
+    if (_front != null || _back != null) _controller.forward(from: 0);
   }
 
   Widget? _buildFade({Widget? child, required Animation<double> opacity}) {
@@ -226,34 +239,37 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> kids = [];
+    if (_sync == null) _sync = false;
+    if (_shouldBuildFront) _buildFront(context);
     Widget? front = _fadeFront, back = _fadeBack;
 
     bool inLoad = _resolver != null && !_resolver!.complete;
     if (inLoad && widget.loadingBuilder != null) {
-      ImageChunkEvent? evt = _resolver!.chunkEvent;
-      double progress = evt?.expectedTotalBytes == null
-          ? 0.0
-          : evt!.cumulativeBytesLoaded / evt.expectedTotalBytes!;
-      front = widget.loadingBuilder!(context, progress, evt);
+      _ImageResolver resolver = _resolver!;
+      front = AnimatedBuilder(
+        animation: resolver.notifier,
+        builder: (_, __) => widget.loadingBuilder!(
+          context,
+          resolver.notifier.value,
+          resolver.chunkEvent,
+        ),
+      );
     }
-
-    if (widget.placeholder != null) kids.add(widget.placeholder!);
-    if (back != null) kids.add(back);
-    if (front != null) kids.add(front);
 
     Widget content = Container(
       width: widget.width,
       height: widget.height,
       child: Stack(
-        children: kids,
         fit: StackFit.passthrough,
+        children: [
+          if (widget.placeholder != null) widget.placeholder!,
+          if (back != null) back,
+          if (front != null) front,
+        ],
       ),
     );
 
-    if (widget.excludeFromSemantics) {
-      return content;
-    }
+    if (widget.excludeFromSemantics) return content;
 
     String? label = widget.semanticLabel;
     return Semantics(
@@ -279,7 +295,6 @@ class _ImageResolver {
     BuildContext context, {
     required this.onComplete,
     required this.onError,
-    required this.onProgress,
     double? width,
     double? height,
   }) {
@@ -290,14 +305,15 @@ class _ImageResolver {
         onChunk: _handleProgress, onError: _handleError);
     _stream = provider.resolve(config);
     _stream.addListener(_listener); // Called sync if already completed.
+    notifier = ValueNotifier(0);
   }
 
   Object? exception;
   ImageChunkEvent? chunkEvent;
+  late final ValueNotifier<double> notifier;
 
   final Function(_ImageResolver resolver) onComplete;
   final Function(_ImageResolver resolver) onError;
-  final Function(_ImageResolver resolver) onProgress;
 
   late ImageStream _stream;
   late ImageStreamListener _listener;
@@ -310,7 +326,7 @@ class _ImageResolver {
 
   bool get error => exception != null;
 
-  void _handleComplete(ImageInfo imageInfo, bool _) {
+  void _handleComplete(ImageInfo imageInfo, bool sync) {
     _imageInfo = imageInfo;
     _complete = true;
     onComplete(this);
@@ -318,7 +334,9 @@ class _ImageResolver {
 
   void _handleProgress(ImageChunkEvent event) {
     chunkEvent = event;
-    onProgress(this);
+    notifier.value = event.expectedTotalBytes != null
+        ? event.cumulativeBytesLoaded / event.expectedTotalBytes!
+        : 0.0;
   }
 
   void _handleError(Object exc, StackTrace? _) {

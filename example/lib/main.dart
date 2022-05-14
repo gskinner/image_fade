@@ -5,7 +5,7 @@ void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -62,11 +62,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    ImageProvider? image;
+    String? url;
     if (_error) {
-      image = const NetworkImage('error.jpg');
+      url = 'error.jpg';
     } else if (!_clear) {
-      image = NetworkImage(_imgs[_counter]);
+      url = _imgs[_counter];
     }
 
     String title = _error
@@ -79,30 +79,39 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(title: Text('Showing ' + title)),
       body: Stack(children: <Widget>[
         Positioned.fill(
-          child: ImageFade(
-            image: image,
-            placeholder: Container(
-              color: const Color(0xFFCFCDCA),
-              child: const Center(
-                child: Icon(
-                  Icons.photo,
-                  color: Colors.white30,
-                  size: 128.0,
-                ),
-              ),
-            ),
+            child: ImageFade(
+          // whenever the image changes, it will be loaded, and then faded in:
+          image: url == null ? null : NetworkImage(url),
+
+          // slow-ish fade for loaded images:
+          duration: const Duration(milliseconds: 900),
+
+          // if the image is loaded synchronously (ex. from memory), fade in faster:
+          durationFast: const Duration(milliseconds: 150),
+
+          // supports most properties of Image:
+          alignment: Alignment.center,
+          fit: BoxFit.cover,
+
+          // shown behind everything:
+          placeholder: Container(
+            color: const Color(0xFFCFCDCA),
             alignment: Alignment.center,
-            fit: BoxFit.cover,
-            loadingBuilder: (_, double progress, __) =>
-                Center(child: CircularProgressIndicator(value: progress)),
-            errorBuilder: (_, __) => Container(
-              color: const Color(0xFF6F6D6A),
-              alignment: Alignment.center,
-              child:
-                  const Icon(Icons.warning, color: Colors.black26, size: 128.0),
-            ),
+            child: const Icon(Icons.photo, color: Colors.white30, size: 128.0),
           ),
-        )
+
+          // shows progress while loading an image:
+          loadingBuilder: (context, progress, chunkEvent) =>
+              Center(child: CircularProgressIndicator(value: progress)),
+
+          // displayed when an error occurs:
+          errorBuilder: (context, error) => Container(
+            color: const Color(0xFF6F6D6A),
+            alignment: Alignment.center,
+            child:
+                const Icon(Icons.warning, color: Colors.black26, size: 128.0),
+          ),
+        ))
       ]),
       floatingActionButton:
           Row(mainAxisAlignment: MainAxisAlignment.end, children: [
