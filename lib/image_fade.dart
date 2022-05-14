@@ -1,6 +1,6 @@
 library image_fade;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'dart:ui' as ui;
 
 /// Signature used by [ImageFade.errorBuilder] to build the widget that will be displayed
