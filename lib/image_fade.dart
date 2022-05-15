@@ -257,17 +257,17 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
       );
     }
 
+    List<Widget> kids = [];
+    if (widget.placeholder != null) kids.add(widget.placeholder!);
+    if (back != null) kids.add(back);
+    if (front != null) kids.add(front);
+
     Widget content = Container(
       width: widget.width,
       height: widget.height,
-      child: Stack(
-        fit: StackFit.passthrough,
-        children: [
-          if (widget.placeholder != null) widget.placeholder!,
-          if (back != null) back,
-          if (front != null) front,
-        ],
-      ),
+      child: kids.isEmpty
+          ? null
+          : Stack(fit: StackFit.passthrough, children: kids),
     );
 
     if (widget.excludeFromSemantics) return content;
