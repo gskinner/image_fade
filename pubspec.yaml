@@ -1,9 +1,9 @@
 name: image_fade
-description: A widget that displays a placeholder and optional progress indicator while an image loads, then cross-fades to the loaded image. Improves on FadeInImage.
+description: A widget that displays a placeholder and optional progress indicator while an image loads, then cross-fades to the loaded image. Improves on FadeInImage. Compatible with CachedNetworkImageProvider.
 repository: https://github.com/gskinner/image_fade
 homepage: https://github.com/gskinner/image_fade
 
-version: 0.6.0
+version: 0.6.1
 
 environment:
   sdk: ">=2.13.4 <3.0.0"

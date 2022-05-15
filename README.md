@@ -1,6 +1,6 @@
 # ImageFade
 
-A widget for Flutter that displays a `placeholder` widget while a specified `image` loads, then cross-fades to the loaded image. Also handles progress and errors. Fade uses `Image.opacity` when appropriate for improved performance.
+A widget for Flutter that displays a `placeholder` widget while a specified `image` loads, then cross-fades to the loaded image. Also handles progress and errors. It uses `Image.opacity` when appropriate for improved performance.
 
 If `image` is changed, it will cross-fade to the new image once it is finished loading. Setting `image` to `null` will cross-fade back to the placeholder.
 
@@ -9,8 +9,8 @@ If `image` is changed, it will cross-fade to the new image once it is finished l
 You can set `duration` and `curve`, as well as most `Image` properties:
 `width`, `height`, `fit`, `alignment`, `repeat`, `matchTextDirection`, `excludeFromSemantics` and `semanticLabel`.
 
-You can also specify a `loadingBuilder` that will display load progress any time a new image is loaded, and an `errorBuilder` that will display if an error occurs while loading an image. Lastly, the optional `syncDuration` is used when
-fading in a synchronously loaded image, error, or placeholder.
+Use `loadingBuilder` and `errorBuilder` to display load progress or error states. Optionally specify `syncDuration` to
+use a different (usually faster) duration for fading in a synchronously loaded image, error, or placeholder.
 
 ``` dart
 ImageFade(
@@ -47,6 +47,8 @@ ImageFade(
 )
 ```
 
+## Image Caching
+ImageFade is compatible with `CachedNetworkImageProvider`.
 
 ## Installing
 The published version of this package is [availble on pub.dev](https://pub.dev/packages/image_fade).
