@@ -3,7 +3,7 @@ description: A widget that displays a placeholder and optional progress indicato
 repository: https://github.com/gskinner/image_fade
 homepage: https://github.com/gskinner/image_fade
 
-version: 0.6.1
+version: 0.6.2
 
 environment:
   sdk: ">=2.13.4 <3.0.0"
