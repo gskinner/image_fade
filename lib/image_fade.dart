@@ -45,6 +45,7 @@ class ImageFade extends StatefulWidget {
     this.syncDuration,
     this.width,
     this.height,
+    this.scale = 1,
     this.fit = BoxFit.scaleDown,
     this.alignment = Alignment.center,
     this.repeat = ImageRepeat.noRepeat,
@@ -77,6 +78,9 @@ class ImageFade extends StatefulWidget {
 
   /// The height to display at. See [Image.height] for more information.
   final double? height;
+
+  /// The scale factor for drawing this image at its intended size. See [RawImage.scale] for more information.
+  final double scale;
 
   /// How to draw the image within its bounds. Defaults to [BoxFit.scaleDown]. See [Image.fit] for more information.
   final BoxFit fit;
@@ -230,6 +234,7 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
       image: image,
       width: widget.width,
       height: widget.height,
+      scale: widget.scale,
       fit: widget.fit,
       alignment: widget.alignment,
       repeat: widget.repeat,

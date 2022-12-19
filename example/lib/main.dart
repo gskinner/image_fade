@@ -92,6 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
           // supports most properties of Image:
           alignment: Alignment.center,
           fit: BoxFit.cover,
+          scale: 2,
 
           // shown behind everything:
           placeholder: Container(
@@ -113,26 +114,28 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ))
       ]),
-      floatingActionButton:
-          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-        FloatingActionButton(
-          onPressed: _incrementCounter,
-          tooltip: 'Next',
-          child: const Icon(Icons.navigate_next),
-        ),
-        const SizedBox(width: 10.0),
-        FloatingActionButton(
-          onPressed: _clearImage,
-          tooltip: 'Clear',
-          child: const Icon(Icons.clear),
-        ),
-        const SizedBox(width: 10.0),
-        FloatingActionButton(
-          onPressed: _testError,
-          tooltip: 'Error',
-          child: const Icon(Icons.warning),
-        ),
-      ]),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: _incrementCounter,
+            tooltip: 'Next',
+            child: const Icon(Icons.navigate_next),
+          ),
+          const SizedBox(width: 10.0),
+          FloatingActionButton(
+            onPressed: _clearImage,
+            tooltip: 'Clear',
+            child: const Icon(Icons.clear),
+          ),
+          const SizedBox(width: 10.0),
+          FloatingActionButton(
+            onPressed: _testError,
+            tooltip: 'Error',
+            child: const Icon(Icons.warning),
+          ),
+        ],
+      ),
     );
   }
 }
